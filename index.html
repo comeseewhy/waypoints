@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Waypoints</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <aside id="panel">
+      <h1>Waypoints</h1>
+      <p class="sub">
+        Build your own mental map of the GTA.
+      </p>
+
+      <form id="waypoint-form">
+        <label for="category">Category</label>
+        <select id="category" required>
+          <option value="">Choose one</option>
+          <option value="grocery">Grocery</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="park">Park</option>
+          <option value="cafe">Cafe</option>
+          <option value="facility">Facility</option>
+          <option value="store">Store</option>
+          <option value="other">Other</option>
+        </select>
+
+        <label for="address">Address</label>
+        <input
+          id="address"
+          type="text"
+          placeholder="123 Example St, Toronto"
+        />
+
+        <div class="or">or</div>
+
+        <button type="button" id="use-map-location">
+          Use map click location
+        </button>
+
+        <div id="selected-location" class="selected-location">
+          No map location selected
+        </div>
+
+        <label for="name">Name</label>
+        <input
+          id="name"
+          type="text"
+          placeholder="Place name"
+          required
+        />
+
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          rows="4"
+          placeholder="Why this place matters..."
+        ></textarea>
+
+        <button type="submit" id="save-btn">Save waypoint</button>
+      </form>
+
+      <div class="actions">
+        <button id="export-btn" type="button">Export waypoints</button>
+        <label class="import-label">
+          Import waypoints
+          <input id="import-file" type="file" accept=".json,.geojson" />
+        </label>
+        <button id="clear-btn" type="button">Clear all</button>
+      </div>
+
+      <hr />
+
+      <div>
+        <h2>Saved waypoints</h2>
+        <div id="waypoint-count">0 total</div>
+        <ul id="waypoint-list"></ul>
+      </div>
+    </aside>
+
+    <main id="map"></main>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="app.js"></script>
+</body>
+</html>
