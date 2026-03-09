@@ -120,12 +120,31 @@ textarea {
 
 .coords-box {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   margin: 12px 0 14px;
   padding: 12px;
   background: #f4f4f4;
   border-radius: 12px;
+}
+
+.coords-label {
   font-size: 13px;
+  font-weight: 700;
+  color: #444444;
+}
+
+.coords-value {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #d9d9d9;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #111111;
+  user-select: text;
+  -webkit-user-select: text;
+  overflow-wrap: anywhere;
 }
 
 .action-row {
@@ -135,7 +154,8 @@ textarea {
 }
 
 .primary-btn,
-.danger-btn {
+.danger-btn,
+.secondary-btn {
   border: none;
   border-radius: 12px;
   padding: 14px 16px;
@@ -151,6 +171,17 @@ textarea {
 .danger-btn {
   background: #b42318;
   color: #ffffff;
+}
+
+.secondary-btn {
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #d3d3d3;
+}
+
+.secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .leaflet-popup-content {
@@ -246,74 +277,6 @@ textarea {
 
 .category-other .waypoint-icon-card {
   background: #f2f2f2;
-}
-
-/* Inspect popup */
-
-.inspect-popup .leaflet-popup-content-wrapper {
-  border-radius: 16px;
-}
-
-.inspect-popup .leaflet-popup-content {
-  margin: 14px;
-  min-width: 220px;
-}
-
-.inspect-card {
-  display: grid;
-  gap: 10px;
-}
-
-.inspect-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #111111;
-}
-
-.inspect-coords-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
-  background: #f6f6f6;
-  border-radius: 10px;
-}
-
-.inspect-coords-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #666666;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.inspect-coords-value {
-  font-family: "Courier New", Courier, monospace;
-  font-size: 13px;
-  color: #111111;
-}
-
-.inspect-action-row {
-  display: grid;
-  gap: 8px;
-}
-
-.inspect-btn {
-  border: 1px solid #d3d3d3;
-  background: #ffffff;
-  color: #111111;
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  font-weight: 700;
-  text-align: center;
-}
-
-.inspect-btn-primary {
-  background: #111111;
-  color: #ffffff;
-  border-color: #111111;
 }
 
 @media (min-width: 900px) {
