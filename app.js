@@ -61,7 +61,8 @@ function initMap() {
   map = L.map("map", {
     zoomControl: true,
     worldCopyJump: false,
-    maxBoundsViscosity: 1.0
+    maxBoundsViscosity: 1.0,
+    tapHold: true
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -72,6 +73,8 @@ function initMap() {
   waypointsLayer = L.layerGroup().addTo(map);
 
   map.on("click", handleMapClick);
+  map.on("contextmenu", handleMapContextMenu);
+  map.on("popupopen", handlePopupOpen);
 
   map.on("zoomend", () => {
     renderWaypoints();
@@ -88,6 +91,7 @@ function bindEvents() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeSheet();
+      map.closePopup();
     }
   });
 }
@@ -101,6 +105,98 @@ function handleMapClick(event) {
   }
 
   openCreateSheet(event.latlng);
+}
+
+function handleMapContextMenu(event) {
+  if (draftMarker) {
+    map.removeLayer(draftMarker);
+    draftMarker = null;
+  }
+
+  const lat = event.latlng.lat;
+  const lng = event.latlng.lng;
+
+  const popup = L.popup({
+    closeButton: true,
+    autoClose: true,
+    closeOnClick: false,
+    className: "inspect-popup"
+  })
+    .setLatLng(event.latlng)
+    .setContent(buildInspectPopupHtml(lat, lng))
+    .openOn(map);
+}
+
+function handlePopupOpen(event) {
+  const popupElement = event.popup.getElement();
+  if (!popupElement) return;
+
+  bindInspectPopupActions(popupElement);
+  bindWaypointPopupActions(popupElement);
+}
+
+function bindInspectPopupActions(popupElement) {
+  const copyButton = popupElement.querySelector("[data-copy-coordinates]");
+  const addButton = popupElement.querySelector("[data-add-waypoint-lat][data-add-waypoint-lng]");
+
+  if (copyButton) {
+    L.DomEvent.disableClickPropagation(copyButton);
+    L.DomEvent.disableScrollPropagation(copyButton);
+
+    copyButton.addEventListener("click", async (clickEvent) => {
+      clickEvent.preventDefault();
+      clickEvent.stopPropagation();
+
+      const lat = Number(copyButton.getAttribute("data-copy-lat"));
+      const lng = Number(copyButton.getAttribute("data-copy-lng"));
+      const coordinateText = formatCoordinates(lat, lng);
+
+      const copied = await copyTextToClipboard(coordinateText);
+      copyButton.textContent = copied ? "Copied" : "Copy failed";
+
+      window.setTimeout(() => {
+        if (document.body.contains(copyButton)) {
+          copyButton.textContent = "Copy coordinates";
+        }
+      }, 1400);
+    });
+  }
+
+  if (addButton) {
+    L.DomEvent.disableClickPropagation(addButton);
+    L.DomEvent.disableScrollPropagation(addButton);
+
+    addButton.addEventListener("click", (clickEvent) => {
+      clickEvent.preventDefault();
+      clickEvent.stopPropagation();
+
+      const lat = Number(addButton.getAttribute("data-add-waypoint-lat"));
+      const lng = Number(addButton.getAttribute("data-add-waypoint-lng"));
+
+      map.closePopup();
+      openCreateSheet({ lat, lng });
+    });
+  }
+}
+
+function bindWaypointPopupActions(popupElement) {
+  const editButton = popupElement.querySelector("[data-edit-waypoint]");
+  if (!editButton) return;
+
+  L.DomEvent.disableClickPropagation(editButton);
+  L.DomEvent.disableScrollPropagation(editButton);
+
+  editButton.addEventListener("click", (clickEvent) => {
+    clickEvent.preventDefault();
+    clickEvent.stopPropagation();
+
+    const waypointId = editButton.getAttribute("data-edit-waypoint");
+    const waypoint = state.waypoints.find((item) => item.id === waypointId);
+
+    if (waypoint) {
+      openEditSheet(waypoint);
+    }
+  });
 }
 
 async function loadNeighbourhoods() {
@@ -166,15 +262,6 @@ function renderWaypoints() {
 
     marker.bindPopup(buildPopupHtml(waypoint));
 
-    marker.on("popupopen", () => {
-      const button = document.querySelector(`[data-edit-waypoint="${waypoint.id}"]`);
-      if (button) {
-        button.addEventListener("click", () => {
-          openEditSheet(waypoint);
-        });
-      }
-    });
-
     marker.on("click", () => {
       if (draftMarker) {
         map.removeLayer(draftMarker);
@@ -204,6 +291,41 @@ function buildPopupHtml(waypoint) {
       <button class="popup-edit-btn" type="button" data-edit-waypoint="${escapeHtml(waypoint.id)}">
         Edit
       </button>
+    </div>
+  `;
+}
+
+function buildInspectPopupHtml(lat, lng) {
+  return `
+    <div class="inspect-card">
+      <div class="inspect-title">Location</div>
+      <div class="inspect-coords-row">
+        <span class="inspect-coords-label">Lat</span>
+        <span class="inspect-coords-value">${escapeHtml(lat.toFixed(6))}</span>
+      </div>
+      <div class="inspect-coords-row">
+        <span class="inspect-coords-label">Lng</span>
+        <span class="inspect-coords-value">${escapeHtml(lng.toFixed(6))}</span>
+      </div>
+      <div class="inspect-action-row">
+        <button
+          type="button"
+          class="inspect-btn"
+          data-copy-coordinates="true"
+          data-copy-lat="${escapeHtml(lat.toString())}"
+          data-copy-lng="${escapeHtml(lng.toString())}"
+        >
+          Copy coordinates
+        </button>
+        <button
+          type="button"
+          class="inspect-btn inspect-btn-primary"
+          data-add-waypoint-lat="${escapeHtml(lat.toString())}"
+          data-add-waypoint-lng="${escapeHtml(lng.toString())}"
+        >
+          Add waypoint here
+        </button>
+      </div>
     </div>
   `;
 }
@@ -258,7 +380,6 @@ function closeSheet() {
     draftMarker = null;
   }
 
-  map.closePopup();
   resetFormState();
 }
 
@@ -337,6 +458,7 @@ async function handleFormSubmit(event) {
 
     await loadWaypoints();
     closeSheet();
+    map.closePopup();
   } catch (error) {
     console.error("Save error:", error);
     alert("Could not save waypoint.");
@@ -360,6 +482,7 @@ async function handleDeleteWaypoint() {
 
     await loadWaypoints();
     closeSheet();
+    map.closePopup();
   } catch (error) {
     console.error("Delete error:", error);
     alert("Could not delete waypoint.");
@@ -494,6 +617,36 @@ function metersToLatDegrees(meters) {
 function metersToLngDegrees(meters, latitude) {
   const safeCos = Math.max(Math.cos(latitude * (Math.PI / 180)), 0.01);
   return meters / (111320 * safeCos);
+}
+
+function formatCoordinates(lat, lng) {
+  return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.setAttribute("readonly", "");
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.select();
+    textArea.setSelectionRange(0, textArea.value.length);
+
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textArea);
+
+    return copied;
+  } catch (error) {
+    console.error("Copy failed:", error);
+    return false;
+  }
 }
 
 function escapeHtml(value) {
