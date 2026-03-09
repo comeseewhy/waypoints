@@ -248,6 +248,74 @@ textarea {
   background: #f2f2f2;
 }
 
+/* Inspect popup */
+
+.inspect-popup .leaflet-popup-content-wrapper {
+  border-radius: 16px;
+}
+
+.inspect-popup .leaflet-popup-content {
+  margin: 14px;
+  min-width: 220px;
+}
+
+.inspect-card {
+  display: grid;
+  gap: 10px;
+}
+
+.inspect-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111111;
+}
+
+.inspect-coords-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #f6f6f6;
+  border-radius: 10px;
+}
+
+.inspect-coords-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.inspect-coords-value {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px;
+  color: #111111;
+}
+
+.inspect-action-row {
+  display: grid;
+  gap: 8px;
+}
+
+.inspect-btn {
+  border: 1px solid #d3d3d3;
+  background: #ffffff;
+  color: #111111;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  text-align: center;
+}
+
+.inspect-btn-primary {
+  background: #111111;
+  color: #ffffff;
+  border-color: #111111;
+}
+
 @media (min-width: 900px) {
   .sheet {
     left: auto;
