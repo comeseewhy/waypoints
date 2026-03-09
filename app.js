@@ -42,8 +42,8 @@ const els = {
   address: document.getElementById("address"),
   category: document.getElementById("category"),
   description: document.getElementById("description"),
-  latDisplay: document.getElementById("lat-display"),
-  lngDisplay: document.getElementById("lng-display"),
+  coordinatesDisplay: document.getElementById("coordinates-display"),
+  copyCoordinatesBtn: document.getElementById("copy-coordinates-btn"),
   deleteBtn: document.getElementById("delete-btn")
 };
 
@@ -61,8 +61,7 @@ function initMap() {
   map = L.map("map", {
     zoomControl: true,
     worldCopyJump: false,
-    maxBoundsViscosity: 1.0,
-    tapHold: true
+    maxBoundsViscosity: 1.0
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -73,8 +72,6 @@ function initMap() {
   waypointsLayer = L.layerGroup().addTo(map);
 
   map.on("click", handleMapClick);
-  map.on("contextmenu", handleMapContextMenu);
-  map.on("popupopen", handlePopupOpen);
 
   map.on("zoomend", () => {
     renderWaypoints();
@@ -87,6 +84,7 @@ function bindEvents() {
   els.closeSheetBtn.addEventListener("click", closeSheet);
   els.backdrop.addEventListener("click", closeSheet);
   els.locateBtn.addEventListener("click", () => requestDeviceLocation(true));
+  els.copyCoordinatesBtn.addEventListener("click", handleCopyCoordinates);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -105,98 +103,6 @@ function handleMapClick(event) {
   }
 
   openCreateSheet(event.latlng);
-}
-
-function handleMapContextMenu(event) {
-  if (draftMarker) {
-    map.removeLayer(draftMarker);
-    draftMarker = null;
-  }
-
-  const lat = event.latlng.lat;
-  const lng = event.latlng.lng;
-
-  const popup = L.popup({
-    closeButton: true,
-    autoClose: true,
-    closeOnClick: false,
-    className: "inspect-popup"
-  })
-    .setLatLng(event.latlng)
-    .setContent(buildInspectPopupHtml(lat, lng))
-    .openOn(map);
-}
-
-function handlePopupOpen(event) {
-  const popupElement = event.popup.getElement();
-  if (!popupElement) return;
-
-  bindInspectPopupActions(popupElement);
-  bindWaypointPopupActions(popupElement);
-}
-
-function bindInspectPopupActions(popupElement) {
-  const copyButton = popupElement.querySelector("[data-copy-coordinates]");
-  const addButton = popupElement.querySelector("[data-add-waypoint-lat][data-add-waypoint-lng]");
-
-  if (copyButton) {
-    L.DomEvent.disableClickPropagation(copyButton);
-    L.DomEvent.disableScrollPropagation(copyButton);
-
-    copyButton.addEventListener("click", async (clickEvent) => {
-      clickEvent.preventDefault();
-      clickEvent.stopPropagation();
-
-      const lat = Number(copyButton.getAttribute("data-copy-lat"));
-      const lng = Number(copyButton.getAttribute("data-copy-lng"));
-      const coordinateText = formatCoordinates(lat, lng);
-
-      const copied = await copyTextToClipboard(coordinateText);
-      copyButton.textContent = copied ? "Copied" : "Copy failed";
-
-      window.setTimeout(() => {
-        if (document.body.contains(copyButton)) {
-          copyButton.textContent = "Copy coordinates";
-        }
-      }, 1400);
-    });
-  }
-
-  if (addButton) {
-    L.DomEvent.disableClickPropagation(addButton);
-    L.DomEvent.disableScrollPropagation(addButton);
-
-    addButton.addEventListener("click", (clickEvent) => {
-      clickEvent.preventDefault();
-      clickEvent.stopPropagation();
-
-      const lat = Number(addButton.getAttribute("data-add-waypoint-lat"));
-      const lng = Number(addButton.getAttribute("data-add-waypoint-lng"));
-
-      map.closePopup();
-      openCreateSheet({ lat, lng });
-    });
-  }
-}
-
-function bindWaypointPopupActions(popupElement) {
-  const editButton = popupElement.querySelector("[data-edit-waypoint]");
-  if (!editButton) return;
-
-  L.DomEvent.disableClickPropagation(editButton);
-  L.DomEvent.disableScrollPropagation(editButton);
-
-  editButton.addEventListener("click", (clickEvent) => {
-    clickEvent.preventDefault();
-    clickEvent.stopPropagation();
-
-    const waypointId = editButton.getAttribute("data-edit-waypoint");
-    const waypoint = state.waypoints.find((item) => item.id === waypointId);
-
-    if (waypoint) {
-      openEditSheet(waypoint);
-    }
-  });
 }
 
 async function loadNeighbourhoods() {
@@ -262,6 +168,15 @@ function renderWaypoints() {
 
     marker.bindPopup(buildPopupHtml(waypoint));
 
+    marker.on("popupopen", () => {
+      const button = document.querySelector(`[data-edit-waypoint="${waypoint.id}"]`);
+      if (button) {
+        button.addEventListener("click", () => {
+          openEditSheet(waypoint);
+        });
+      }
+    });
+
     marker.on("click", () => {
       if (draftMarker) {
         map.removeLayer(draftMarker);
@@ -291,41 +206,6 @@ function buildPopupHtml(waypoint) {
       <button class="popup-edit-btn" type="button" data-edit-waypoint="${escapeHtml(waypoint.id)}">
         Edit
       </button>
-    </div>
-  `;
-}
-
-function buildInspectPopupHtml(lat, lng) {
-  return `
-    <div class="inspect-card">
-      <div class="inspect-title">Location</div>
-      <div class="inspect-coords-row">
-        <span class="inspect-coords-label">Lat</span>
-        <span class="inspect-coords-value">${escapeHtml(lat.toFixed(6))}</span>
-      </div>
-      <div class="inspect-coords-row">
-        <span class="inspect-coords-label">Lng</span>
-        <span class="inspect-coords-value">${escapeHtml(lng.toFixed(6))}</span>
-      </div>
-      <div class="inspect-action-row">
-        <button
-          type="button"
-          class="inspect-btn"
-          data-copy-coordinates="true"
-          data-copy-lat="${escapeHtml(lat.toString())}"
-          data-copy-lng="${escapeHtml(lng.toString())}"
-        >
-          Copy coordinates
-        </button>
-        <button
-          type="button"
-          class="inspect-btn inspect-btn-primary"
-          data-add-waypoint-lat="${escapeHtml(lat.toString())}"
-          data-add-waypoint-lng="${escapeHtml(lng.toString())}"
-        >
-          Add waypoint here
-        </button>
-      </div>
     </div>
   `;
 }
@@ -380,6 +260,7 @@ function closeSheet() {
     draftMarker = null;
   }
 
+  map.closePopup();
   resetFormState();
 }
 
@@ -394,13 +275,16 @@ function resetFormState() {
 
 function updateCoordinateDisplays() {
   if (!state.selectedLatLng) {
-    els.latDisplay.textContent = "—";
-    els.lngDisplay.textContent = "—";
+    els.coordinatesDisplay.textContent = "—";
+    els.copyCoordinatesBtn.disabled = true;
     return;
   }
 
-  els.latDisplay.textContent = state.selectedLatLng.lat.toFixed(6);
-  els.lngDisplay.textContent = state.selectedLatLng.lng.toFixed(6);
+  els.coordinatesDisplay.textContent = formatCoordinates(
+    state.selectedLatLng.lat,
+    state.selectedLatLng.lng
+  );
+  els.copyCoordinatesBtn.disabled = false;
 }
 
 function placeDraftMarker(latlng) {
@@ -415,6 +299,25 @@ function placeDraftMarker(latlng) {
     fillColor: "#ffffff",
     fillOpacity: 1
   }).addTo(map);
+}
+
+async function handleCopyCoordinates() {
+  if (!state.selectedLatLng) return;
+
+  const coordinateText = formatCoordinates(
+    state.selectedLatLng.lat,
+    state.selectedLatLng.lng
+  );
+
+  const copied = await copyTextToClipboard(coordinateText);
+  const originalLabel = els.copyCoordinatesBtn.textContent;
+
+  els.copyCoordinatesBtn.textContent = copied ? "Copied" : "Copy failed";
+  window.setTimeout(() => {
+    if (document.body.contains(els.copyCoordinatesBtn)) {
+      els.copyCoordinatesBtn.textContent = originalLabel;
+    }
+  }, 1400);
 }
 
 async function handleFormSubmit(event) {
@@ -458,7 +361,6 @@ async function handleFormSubmit(event) {
 
     await loadWaypoints();
     closeSheet();
-    map.closePopup();
   } catch (error) {
     console.error("Save error:", error);
     alert("Could not save waypoint.");
@@ -482,7 +384,6 @@ async function handleDeleteWaypoint() {
 
     await loadWaypoints();
     closeSheet();
-    map.closePopup();
   } catch (error) {
     console.error("Delete error:", error);
     alert("Could not delete waypoint.");
@@ -620,7 +521,7 @@ function metersToLngDegrees(meters, latitude) {
 }
 
 function formatCoordinates(lat, lng) {
-  return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  return `${lat.toFixed(6)} , ${lng.toFixed(6)}`;
 }
 
 async function copyTextToClipboard(text) {
