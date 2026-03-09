@@ -72,6 +72,10 @@ function initMap() {
   waypointsLayer = L.layerGroup().addTo(map);
 
   map.on("click", handleMapClick);
+
+  map.on("zoomend", () => {
+    renderWaypoints();
+  });
 }
 
 function bindEvents() {
@@ -151,6 +155,8 @@ async function loadWaypoints() {
 }
 
 function renderWaypoints() {
+  if (!waypointsLayer) return;
+
   waypointsLayer.clearLayers();
 
   state.waypoints.forEach((waypoint) => {
@@ -412,18 +418,43 @@ function requestDeviceLocation(showFailureAlert = false) {
 function createWaypointIcon(category) {
   const categoryKey = normalizeCategory(category);
   const categoryInfo = getCategoryMeta(categoryKey);
+  const size = getMarkerSizeForZoom(map ? map.getZoom() : DEFAULT_ZOOM);
+  const emojiSize = Math.round(size * 0.42);
+  const borderRadius = Math.round(size * 0.28);
+  const borderWidth = 2;
+  const tailSize = Math.max(10, Math.round(size * 0.28));
+  const tailOffset = Math.round(tailSize * 0.52);
+  const totalHeight = size + tailOffset;
 
   return L.divIcon({
     className: `waypoint-icon-wrapper category-${categoryKey}`,
     html: `
-      <div class="waypoint-icon" aria-hidden="true">
+      <div
+        class="waypoint-icon-card"
+        aria-hidden="true"
+        style="
+          width:${size}px;
+          height:${size}px;
+          border-radius:${borderRadius}px;
+          border-width:${borderWidth}px;
+          --marker-tail-size:${tailSize}px;
+          --marker-emoji-size:${emojiSize}px;
+        "
+      >
         <span class="waypoint-icon-emoji">${escapeHtml(categoryInfo.icon)}</span>
       </div>
     `,
-    iconSize: [34, 34],
-    iconAnchor: [17, 34],
-    popupAnchor: [0, -28]
+    iconSize: [size, totalHeight],
+    iconAnchor: [size / 2, totalHeight],
+    popupAnchor: [0, -totalHeight + 8]
   });
+}
+
+function getMarkerSizeForZoom(zoom) {
+  if (zoom >= 16) return 64;
+  if (zoom >= 14) return 56;
+  if (zoom >= 12) return 48;
+  return 40;
 }
 
 function getCategoryMeta(category) {
