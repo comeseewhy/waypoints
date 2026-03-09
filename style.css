@@ -180,33 +180,31 @@ textarea {
   cursor: pointer;
 }
 
-/* Waypoint icons */
+/* Marker shell */
 
 .waypoint-icon-wrapper {
   background: transparent;
   border: none;
 }
 
-.waypoint-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
+.waypoint-icon-card {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #111111;
+  box-sizing: border-box;
   background: #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-  position: relative;
+  border: 2px solid #111111;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
 }
 
-.waypoint-icon::after {
+.waypoint-icon-card::after {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: -8px;
-  width: 10px;
-  height: 10px;
+  bottom: calc(var(--marker-tail-size) * -0.48);
+  width: var(--marker-tail-size);
+  height: var(--marker-tail-size);
   background: inherit;
   border-right: 2px solid #111111;
   border-bottom: 2px solid #111111;
@@ -215,37 +213,39 @@ textarea {
 }
 
 .waypoint-icon-emoji {
-  font-size: 16px;
+  display: block;
+  font-size: var(--marker-emoji-size);
   line-height: 1;
-  transform: translateY(-1px);
 }
 
-.category-grocery .waypoint-icon {
-  background: #e8f5e9;
+/* Category color accents */
+
+.category-grocery .waypoint-icon-card {
+  background: #dff3e4;
 }
 
-.category-restaurant .waypoint-icon {
-  background: #fff3e0;
+.category-restaurant .waypoint-icon-card {
+  background: #ffe8d9;
 }
 
-.category-park .waypoint-icon {
-  background: #e8f5e9;
+.category-park .waypoint-icon-card {
+  background: #def7e5;
 }
 
-.category-cafe .waypoint-icon {
-  background: #f3e5f5;
+.category-cafe .waypoint-icon-card {
+  background: #f3e4ff;
 }
 
-.category-facility .waypoint-icon {
-  background: #e3f2fd;
+.category-facility .waypoint-icon-card {
+  background: #deefff;
 }
 
-.category-store .waypoint-icon {
-  background: #fce4ec;
+.category-store .waypoint-icon-card {
+  background: #ffe1ef;
 }
 
-.category-other .waypoint-icon {
-  background: #f5f5f5;
+.category-other .waypoint-icon-card {
+  background: #f2f2f2;
 }
 
 @media (min-width: 900px) {
