@@ -1,45 +1,99 @@
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: Arial, sans-serif;
-}
-
-#app {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  height: 100vh;
-}
-
-#panel {
-  padding: 16px;
-  overflow-y: auto;
-  border-right: 1px solid #ddd;
-  background: #fafafa;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f7f7f7;
 }
 
 #map {
-  height: 100vh;
   width: 100%;
+  height: 100vh;
+  height: 100dvh;
 }
 
-h1 {
-  margin-top: 0;
-  margin-bottom: 6px;
-  font-size: 24px;
+.floating-btn {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 1100;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  font-size: 20px;
+  cursor: pointer;
 }
 
-.sub {
-  margin-top: 0;
-  color: #666;
-  font-size: 14px;
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1190;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1200;
+  background: #ffffff;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.18);
+  padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.sheet-handle {
+  width: 48px;
+  height: 5px;
+  border-radius: 999px;
+  background: #d0d0d0;
+  margin: 4px auto 12px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.icon-btn {
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  border-radius: 10px;
+  min-width: 40px;
+  min-height: 40px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.field {
+  margin-bottom: 12px;
 }
 
 label {
   display: block;
-  margin-top: 12px;
   margin-bottom: 6px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 input,
@@ -48,112 +102,97 @@ textarea,
 button {
   width: 100%;
   box-sizing: border-box;
-  font-size: 14px;
-  padding: 10px;
-  border-radius: 8px;
+  font: inherit;
 }
 
 input,
 select,
 textarea {
-  border: 1px solid #ccc;
-  background: white;
-}
-
-button {
-  border: 1px solid #bbb;
-  background: white;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-button:hover {
-  background: #f0f0f0;
-}
-
-.or {
-  text-align: center;
-  margin: 10px 0;
-  color: #666;
-}
-
-.selected-location {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #444;
-  padding: 8px;
+  border: 1px solid #d3d3d3;
+  border-radius: 12px;
+  padding: 12px;
   background: #fff;
-  border: 1px dashed #ccc;
-  border-radius: 8px;
 }
 
-.actions {
-  margin-top: 16px;
+textarea {
+  resize: vertical;
+}
+
+.coords-box {
   display: grid;
+  gap: 6px;
+  margin: 12px 0 14px;
+  padding: 12px;
+  background: #f4f4f4;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-.import-label {
-  display: block;
-  border: 1px solid #bbb;
-  padding: 10px;
-  border-radius: 8px;
-  background: white;
+.primary-btn,
+.danger-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 14px 16px;
   cursor: pointer;
-  text-align: center;
+  font-weight: 700;
 }
 
-.import-label input {
-  display: none;
+.primary-btn {
+  background: #111111;
+  color: #ffffff;
 }
 
-#waypoint-list {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0 0;
+.danger-btn {
+  background: #b42318;
+  color: #ffffff;
 }
 
-#waypoint-list li {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
+.leaflet-popup-content {
+  margin: 12px 14px;
 }
 
-.item-title {
+.popup-title {
   font-weight: 700;
   margin-bottom: 4px;
 }
 
-.item-meta {
+.popup-meta {
   font-size: 12px;
   color: #666;
   margin-bottom: 6px;
 }
 
-.item-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
+.popup-desc {
+  margin-bottom: 8px;
 }
 
-.item-buttons button {
-  margin-top: 0;
+.popup-edit-btn {
+  border: 1px solid #d3d3d3;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
 }
 
-@media (max-width: 800px) {
-  #app {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 55vh;
+@media (min-width: 900px) {
+  .sheet {
+    left: auto;
+    width: 420px;
+    right: 16px;
+    bottom: 16px;
+    border-radius: 18px;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
   }
 
-  #panel {
-    border-right: none;
-    border-bottom: 1px solid #ddd;
-  }
-
-  #map {
-    height: 55vh;
+  .sheet-backdrop {
+    background: transparent;
+    pointer-events: none;
   }
 }
