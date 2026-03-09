@@ -5,12 +5,24 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DEFAULT_CENTER = [43.6532, -79.3832];
 const DEFAULT_ZOOM = 10;
+const MAP_SCOPE_BUFFER_METERS = 1000;
+
+const CATEGORY_META = {
+  grocery: { icon: "🛒", label: "Grocery" },
+  restaurant: { icon: "🍽️", label: "Restaurant" },
+  park: { icon: "🌳", label: "Park" },
+  cafe: { icon: "☕", label: "Cafe" },
+  facility: { icon: "🏢", label: "Facility" },
+  store: { icon: "🛍️", label: "Store" },
+  other: { icon: "📍", label: "Other" }
+};
 
 let map;
 let neighbourhoodsLayer;
 let waypointsLayer;
 let userLocationMarker = null;
 let draftMarker = null;
+let mapScopeBounds = null;
 
 const state = {
   mode: "create", // "create" | "edit"
@@ -47,7 +59,9 @@ async function init() {
 
 function initMap() {
   map = L.map("map", {
-    zoomControl: true
+    zoomControl: true,
+    worldCopyJump: false,
+    maxBoundsViscosity: 1.0
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -57,9 +71,7 @@ function initMap() {
 
   waypointsLayer = L.layerGroup().addTo(map);
 
-  map.on("click", (event) => {
-    openCreateSheet(event.latlng);
-  });
+  map.on("click", handleMapClick);
 }
 
 function bindEvents() {
@@ -76,6 +88,17 @@ function bindEvents() {
   });
 }
 
+function handleMapClick(event) {
+  map.closePopup();
+
+  if (isSheetOpen() && state.mode === "create") {
+    closeSheet();
+    return;
+  }
+
+  openCreateSheet(event.latlng);
+}
+
 async function loadNeighbourhoods() {
   try {
     const response = await fetch("./data/neighbourhoods.geojson");
@@ -86,26 +109,24 @@ async function loadNeighbourhoods() {
     const geojson = await response.json();
 
     neighbourhoodsLayer = L.geoJSON(geojson, {
+      interactive: false,
       style: {
-        color: "#555",
+        color: "#555555",
         weight: 1,
         fillColor: "#cccccc",
         fillOpacity: 0.12
-      },
-      onEachFeature: (feature, layer) => {
-        const name =
-          feature?.properties?.AREA_NAME ||
-          feature?.properties?.name ||
-          feature?.properties?.NAME ||
-          "Neighbourhood";
-
-        layer.bindPopup(`<strong>${escapeHtml(name)}</strong>`);
       }
     }).addTo(map);
 
     const bounds = neighbourhoodsLayer.getBounds();
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [12, 12] });
+      mapScopeBounds = getBufferedBounds(bounds, MAP_SCOPE_BUFFER_METERS);
+
+      map.fitBounds(mapScopeBounds, { padding: [12, 12] });
+      map.setMaxBounds(mapScopeBounds);
+
+      const fittedZoom = map.getZoom();
+      map.setMinZoom(Math.max(fittedZoom, 9));
     }
   } catch (error) {
     console.error(error);
@@ -133,7 +154,9 @@ function renderWaypoints() {
   waypointsLayer.clearLayers();
 
   state.waypoints.forEach((waypoint) => {
-    const marker = L.marker([waypoint.lat, waypoint.lng]).addTo(waypointsLayer);
+    const marker = L.marker([waypoint.lat, waypoint.lng], {
+      icon: createWaypointIcon(waypoint.category)
+    }).addTo(waypointsLayer);
 
     marker.bindPopup(buildPopupHtml(waypoint));
 
@@ -156,6 +179,8 @@ function renderWaypoints() {
 }
 
 function buildPopupHtml(waypoint) {
+  const categoryInfo = getCategoryMeta(waypoint.category);
+
   const addressHtml = waypoint.address
     ? `<div>${escapeHtml(waypoint.address)}</div>`
     : "";
@@ -167,7 +192,7 @@ function buildPopupHtml(waypoint) {
   return `
     <div>
       <div class="popup-title">${escapeHtml(waypoint.name)}</div>
-      <div class="popup-meta">${escapeHtml(waypoint.category)}</div>
+      <div class="popup-meta">${escapeHtml(categoryInfo.icon)} ${escapeHtml(categoryInfo.label)}</div>
       ${addressHtml}
       ${descHtml}
       <button class="popup-edit-btn" type="button" data-edit-waypoint="${escapeHtml(waypoint.id)}">
@@ -227,6 +252,7 @@ function closeSheet() {
     draftMarker = null;
   }
 
+  map.closePopup();
   resetFormState();
 }
 
@@ -360,7 +386,14 @@ function requestDeviceLocation(showFailureAlert = false) {
       }).addTo(map);
 
       userLocationMarker.bindPopup("You are here");
-      map.setView([lat, lng], 14);
+
+      if (mapScopeBounds && mapScopeBounds.contains([lat, lng])) {
+        map.setView([lat, lng], Math.max(map.getZoom(), 14));
+      } else if (mapScopeBounds) {
+        map.fitBounds(mapScopeBounds, { padding: [12, 12] });
+      } else {
+        map.setView([lat, lng], 14);
+      }
     },
     (error) => {
       console.error("Geolocation error:", error);
@@ -374,6 +407,62 @@ function requestDeviceLocation(showFailureAlert = false) {
       maximumAge: 60000
     }
   );
+}
+
+function createWaypointIcon(category) {
+  const categoryKey = normalizeCategory(category);
+  const categoryInfo = getCategoryMeta(categoryKey);
+
+  return L.divIcon({
+    className: `waypoint-icon-wrapper category-${categoryKey}`,
+    html: `
+      <div class="waypoint-icon" aria-hidden="true">
+        <span class="waypoint-icon-emoji">${escapeHtml(categoryInfo.icon)}</span>
+      </div>
+    `,
+    iconSize: [34, 34],
+    iconAnchor: [17, 34],
+    popupAnchor: [0, -28]
+  });
+}
+
+function getCategoryMeta(category) {
+  const key = normalizeCategory(category);
+  return CATEGORY_META[key] || CATEGORY_META.other;
+}
+
+function normalizeCategory(category) {
+  const value = String(category || "").trim().toLowerCase();
+  return CATEGORY_META[value] ? value : "other";
+}
+
+function isSheetOpen() {
+  return !els.sheet.classList.contains("hidden");
+}
+
+function getBufferedBounds(bounds, bufferMeters) {
+  const south = bounds.getSouth();
+  const west = bounds.getWest();
+  const north = bounds.getNorth();
+  const east = bounds.getEast();
+  const centerLat = bounds.getCenter().lat;
+
+  const latPadding = metersToLatDegrees(bufferMeters);
+  const lngPadding = metersToLngDegrees(bufferMeters, centerLat);
+
+  return L.latLngBounds(
+    [south - latPadding, west - lngPadding],
+    [north + latPadding, east + lngPadding]
+  );
+}
+
+function metersToLatDegrees(meters) {
+  return meters / 111320;
+}
+
+function metersToLngDegrees(meters, latitude) {
+  const safeCos = Math.max(Math.cos(latitude * (Math.PI / 180)), 0.01);
+  return meters / (111320 * safeCos);
 }
 
 function escapeHtml(value) {
