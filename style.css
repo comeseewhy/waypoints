@@ -164,7 +164,7 @@ textarea {
 
 .popup-meta {
   font-size: 12px;
-  color: #666;
+  color: #666666;
   margin-bottom: 6px;
 }
 
@@ -174,10 +174,78 @@ textarea {
 
 .popup-edit-btn {
   border: 1px solid #d3d3d3;
-  background: #fff;
+  background: #ffffff;
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
+}
+
+/* Waypoint icons */
+
+.waypoint-icon-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.waypoint-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #111111;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  position: relative;
+}
+
+.waypoint-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border-right: 2px solid #111111;
+  border-bottom: 2px solid #111111;
+  transform: translateX(-50%) rotate(45deg);
+  box-sizing: border-box;
+}
+
+.waypoint-icon-emoji {
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.category-grocery .waypoint-icon {
+  background: #e8f5e9;
+}
+
+.category-restaurant .waypoint-icon {
+  background: #fff3e0;
+}
+
+.category-park .waypoint-icon {
+  background: #e8f5e9;
+}
+
+.category-cafe .waypoint-icon {
+  background: #f3e5f5;
+}
+
+.category-facility .waypoint-icon {
+  background: #e3f2fd;
+}
+
+.category-store .waypoint-icon {
+  background: #fce4ec;
+}
+
+.category-other .waypoint-icon {
+  background: #f5f5f5;
 }
 
 @media (min-width: 900px) {
